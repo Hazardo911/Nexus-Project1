@@ -1,13 +1,13 @@
 # Nexus-Project1
 AI-powered fitness coach that detects incorrect exercise form using pose estimation and provides real-time feedback
 AI Fitness Coach (a.k.a. “bhai form sahi rakh” system)
-🧠 What is this?
+
 This is our attempt at building an:
-🏋️ AI-based exercise form correction system
+ AI-based exercise form correction system
 Basically:
 Plain text
 Camera → Skeleton → Maths → “bhai seedha khada reh”
-🎯 What we TRIED to do
+ What we TRIED to do
 According to the problem statement:
 detect incorrect form ✅
 analyze movement ✅
@@ -22,7 +22,7 @@ exercise_logic.py  → actual brain (angles + feedback)
 main.py            → FastAPI backend (start/stop system)
 model.pth          → “AI” that sometimes guesses correctly
 label_map.json     → translates model output to human words
-🔥 The REAL HERO
+ The REAL HERO
 💥 exercise_logic.py
 This is where the magic happens.
 knee angle
@@ -46,7 +46,7 @@ feedback
 FastAPI backend
 can start/stop system
 👉 we added it because… backend hona chahiye 😎
-🤖 The “AI Model” Story (important 😭)
+🤖 The “AI Model” Story (important 😭) ai model ka kaam mera nahi tha 😭
 We trained a model (.pth) to:
 Plain text
 detect which exercise user is doing
@@ -72,7 +72,7 @@ But:
 Plain text
 Model → suggestion only
 Logic → actual system
-🏆 Final System (actual working thing)
+ Final System (actual working thing)
 Plain text
 User selects exercise
 ↓
@@ -126,7 +126,7 @@ http://127.0.0.1:8000/docs
 Hit:
 
 POST /start
-🧪 Before changing anything
+ Before changing anything
 Please:
 👉 run once
 👉 see how it works
