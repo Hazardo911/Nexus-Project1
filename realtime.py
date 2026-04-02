@@ -1,4 +1,4 @@
-# import cv2
+﻿# import cv2
 # import mediapipe as mp
 # import numpy as np
 # import torch
@@ -67,12 +67,12 @@
 #     "y": 30,
 # }
 
-# # FIX: Window size — set to 1280x720 so all UI fits comfortably
+# # FIX: Window size â€” set to 1280x720 so all UI fits comfortably
 # WINDOW_W = 1280
 # WINDOW_H = 720
 
 # # MediaPipe landmark indices used for joint angle overlay
-# # Maps joint name → (point_a, vertex, point_c) for angle calculation display
+# # Maps joint name â†’ (point_a, vertex, point_c) for angle calculation display
 # JOINT_OVERLAY_INDICES = {
 #     "squat":       [(23, 25, 27), (24, 26, 28)],          # L/R knee
 #     "pushup":      [(11, 13, 15), (12, 14, 16)],          # L/R elbow
@@ -126,9 +126,9 @@
 #              color=(180, 180, 180), thickness=1)
 
 #     for i, msg in enumerate(feedback):
-#         color = (50, 220, 50) if "✅" in msg else \
-#                 (0,  120, 255) if "❌" in msg else \
-#                 (0,  200, 255) if "⚠"  in msg else \
+#         color = (50, 220, 50) if "âœ…" in msg else \
+#                 (0,  120, 255) if "âŒ" in msg else \
+#                 (0,  200, 255) if "âš "  in msg else \
 #                 (220, 220, 220)
 #         put_text(frame, msg, (panel_x, panel_y + 28 + i * 28),
 #                  scale=0.58, color=color, thickness=1)
@@ -165,7 +165,7 @@
 
 #     # Small filled circle at joint
 #     cv2.circle(frame, (px, py), 8, color, -1)
-#     put_text(frame, f"{int(angle)}°", (px + offset_x, py + offset_y),
+#     put_text(frame, f"{int(angle)}Â°", (px + offset_x, py + offset_y),
 #              scale=0.55, color=color, thickness=1)
 
 
@@ -284,7 +284,7 @@
 #         model_available = True
 #         print("[realtime] Model loaded.")
 #     except FileNotFoundError:
-#         print("[realtime] Model files not found — running in manual-select mode.")
+#         print("[realtime] Model files not found â€” running in manual-select mode.")
 #         LABELS          = {}
 #         model           = None
 #         model_available = False
@@ -315,7 +315,7 @@
 #     detect_start     = time.time()
 #     prediction_made  = False
 
-#     # Custom drawing spec for skeleton — thicker lines, bigger joints
+#     # Custom drawing spec for skeleton â€” thicker lines, bigger joints
 #     landmark_spec   = mp_draw.DrawingSpec(color=(0, 255, 120), thickness=2, circle_radius=4)
 #     connection_spec = mp_draw.DrawingSpec(color=(255, 255, 255), thickness=2)
 
@@ -383,19 +383,19 @@
 #                 from engine import UNSUPPORTED
 #                 lines = []
 #                 if predicted_label and predicted_label in UNSUPPORTED:
-#                     # Model detected cleanandjerk / handstandpushup — no logic available
+#                     # Model detected cleanandjerk / handstandpushup â€” no logic available
 #                     lines.append((
-#                         f"Detected: {predicted_label.upper()} (no tracker yet) — pick manually below",
+#                         f"Detected: {predicted_label.upper()} (no tracker yet) â€” pick manually below",
 #                         (0, 165, 255)
 #                     ))
 #                 elif predicted_label and confidence >= CONF_THRESHOLD:
 #                     lines.append((
-#                         f"Detected: {predicted_label.upper()} ({confidence:.0%})  — press Y to confirm",
+#                         f"Detected: {predicted_label.upper()} ({confidence:.0%})  â€” press Y to confirm",
 #                         (50, 220, 50)
 #                     ))
 #                 elif predicted_label:
 #                     lines.append((
-#                         f"Low confidence: {predicted_label} ({confidence:.0%}) — pick manually",
+#                         f"Low confidence: {predicted_label} ({confidence:.0%}) â€” pick manually",
 #                         (0, 165, 255)
 #                     ))
 #                 else:
@@ -501,7 +501,7 @@
 #                     if result["done"]:
 #                         state = "DONE"
 #                 else:
-#                     # FIX: Only show "no pose" message — never hard-block
+#                     # FIX: Only show "no pose" message â€” never hard-block
 #                     put_text(frame, "Adjusting pose detection...", (10, 50),
 #                              scale=0.65, color=(0, 180, 255))
 
@@ -527,7 +527,7 @@
 #                     "reps":       summary["total_reps"],
 #                     "goal":       engine.goal,
 #                     "stage":      "done",
-#                     "feedback":   ["Session complete ✅"],
+#                     "feedback":   ["Session complete âœ…"],
 #                     "accuracy":   summary["accuracy"],
 #                     "angles":     {},
 #                     "done":       True,
@@ -601,7 +601,7 @@ class STGCN_Lite(torch.nn.Module):
 
 SEQ_LEN         = 40
 DETECTION_DELAY = 15
-CONF_THRESHOLD  = 0.70   # raised — model is unreliable at low confidence
+CONF_THRESHOLD  = 0.70   # raised â€” model is unreliable at low confidence
 FONT            = cv2.FONT_HERSHEY_SIMPLEX
 
 # FIX: Added wallpushup and benchpress keys, updated labels
@@ -624,12 +624,12 @@ GOAL_KEYS: dict[str, int] = {
     "y": 30,
 }
 
-# FIX: Window size — set to 1280x720 so all UI fits comfortably
+# FIX: Window size â€” set to 1280x720 so all UI fits comfortably
 WINDOW_W = 1280
 WINDOW_H = 720
 
 # MediaPipe landmark indices used for joint angle overlay
-# Maps joint name → (point_a, vertex, point_c) for angle calculation display
+# Maps joint name â†’ (point_a, vertex, point_c) for angle calculation display
 JOINT_OVERLAY_INDICES = {
     "squat":       [(23, 25, 27), (24, 26, 28)],          # L/R knee
     "pushup":      [(11, 13, 15), (12, 14, 16)],          # L/R elbow
@@ -683,9 +683,9 @@ def draw_feedback_panel(frame, feedback: list[str]):
              color=(180, 180, 180), thickness=1)
 
     for i, msg in enumerate(feedback):
-        color = (50, 220, 50) if "✅" in msg else \
-                (0,  120, 255) if "❌" in msg else \
-                (0,  200, 255) if "⚠"  in msg else \
+        color = (50, 220, 50) if "âœ…" in msg else \
+                (0,  120, 255) if "âŒ" in msg else \
+                (0,  200, 255) if "âš "  in msg else \
                 (220, 220, 220)
         put_text(frame, msg, (panel_x, panel_y + 28 + i * 28),
                  scale=0.58, color=color, thickness=1)
@@ -722,7 +722,7 @@ def draw_angle_on_joint(frame, lm, triplet: tuple, frame_w: int, frame_h: int):
 
     # Small filled circle at joint
     cv2.circle(frame, (px, py), 8, color, -1)
-    put_text(frame, f"{int(angle)}°", (px + offset_x, py + offset_y),
+    put_text(frame, f"{int(angle)}Â°", (px + offset_x, py + offset_y),
              scale=0.55, color=color, thickness=1)
 
 
@@ -826,6 +826,10 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--state-file", default=None,
                         help="JSON file path for sharing state with main.py")
+    parser.add_argument("--exercise", default=None,
+                        help="Optional exercise to preselect before opening the camera loop")
+    parser.add_argument("--goal", type=int, default=None,
+                        help="Optional rep goal to prefill before tracking")
     args        = parser.parse_args()
     state_file  = args.state_file
 
@@ -841,12 +845,14 @@ def main():
         model_available = True
         print("[realtime] Model loaded.")
     except FileNotFoundError:
-        print("[realtime] Model files not found — running in manual-select mode.")
+        print("[realtime] Model files not found â€” running in manual-select mode.")
         LABELS          = {}
         model           = None
         model_available = False
 
     engine    = FitnessEngine()
+    requested_exercise = args.exercise.lower() if args.exercise else None
+    requested_goal = args.goal if args.goal and args.goal > 0 else None
     mp_pose   = mp.solutions.pose
     mp_draw   = mp.solutions.drawing_utils
     mp_style  = mp.solutions.drawing_styles
@@ -867,12 +873,23 @@ def main():
     sequence: deque = deque(maxlen=SEQ_LEN)
 
     state            = "SELECTING"
+    if requested_exercise:
+        ok = engine.set_exercise(requested_exercise)
+        if ok:
+            state = "TRACKING" if requested_goal else "SETTING_GOAL"
+            if requested_goal:
+                engine.set_goal(requested_goal)
+                print(f"[session] preselected {requested_exercise} | goal: {requested_goal} reps")
+            else:
+                print(f"[session] preselected {requested_exercise} | waiting for goal")
+        else:
+            print(f"[session] unable to preselect exercise: {requested_exercise}")
     predicted_label  = None
     confidence       = 0.0
     detect_start     = time.time()
     prediction_made  = False
 
-    # Custom drawing spec for skeleton — thicker lines, bigger joints
+    # Custom drawing spec for skeleton â€” thicker lines, bigger joints
     landmark_spec   = mp_draw.DrawingSpec(color=(0, 255, 120), thickness=2, circle_radius=4)
     connection_spec = mp_draw.DrawingSpec(color=(255, 255, 255), thickness=2)
 
@@ -935,7 +952,7 @@ def main():
                     # -------------------------------------------------------
                     # FIX: Suppress unreliable classes that the model
                     # over-predicts (handstandpushup, cleanandjerk).
-                    # Zero out their probability before picking the winner —
+                    # Zero out their probability before picking the winner â€”
                     # they remain in the model output but can never be chosen.
                     # -------------------------------------------------------
                     SUPPRESSED_LABELS = {"handstandpushup", "cleanandjerk"}
@@ -948,7 +965,7 @@ def main():
                     if prob_sum > 0:
                         probs[0] /= prob_sum
 
-                    # FIX: Vote across 3 shifted windows — only accept a label
+                    # FIX: Vote across 3 shifted windows â€” only accept a label
                     # if it wins in at least 2 out of 3 windows.
                     # This kills one-frame flukes that used to dominate.
                     votes = []
@@ -986,29 +1003,29 @@ def main():
                         predicted_label = top_label
                         confidence      = 0.45   # treat as low-confidence suggestion
                     else:
-                        # No majority — ask user to pick manually
+                        # No majority â€” ask user to pick manually
                         predicted_label = None
                         confidence      = 0.0
 
                     prediction_made = True
-                    print(f"[model] votes={votes} → {predicted_label} ({confidence:.2f})")
+                    print(f"[model] votes={votes} â†’ {predicted_label} ({confidence:.2f})")
 
                 from engine import UNSUPPORTED
                 lines = []
                 if predicted_label and predicted_label in UNSUPPORTED:
-                    # Model detected cleanandjerk / handstandpushup — no logic available
+                    # Model detected cleanandjerk / handstandpushup â€” no logic available
                     lines.append((
-                        f"Detected: {predicted_label.upper()} (no tracker yet) — pick manually below",
+                        f"Detected: {predicted_label.upper()} (no tracker yet) â€” pick manually below",
                         (0, 165, 255)
                     ))
                 elif predicted_label and confidence >= CONF_THRESHOLD:
                     lines.append((
-                        f"Detected: {predicted_label.upper()} ({confidence:.0%})  — press Y to confirm",
+                        f"Detected: {predicted_label.upper()} ({confidence:.0%})  â€” press Y to confirm",
                         (50, 220, 50)
                     ))
                 elif predicted_label:
                     lines.append((
-                        f"Low confidence: {predicted_label} ({confidence:.0%}) — pick manually",
+                        f"Low confidence: {predicted_label} ({confidence:.0%}) â€” pick manually",
                         (0, 165, 255)
                     ))
                 else:
@@ -1114,7 +1131,7 @@ def main():
                     if result["done"]:
                         state = "DONE"
                 else:
-                    # FIX: Only show "no pose" message — never hard-block
+                    # FIX: Only show "no pose" message â€” never hard-block
                     put_text(frame, "Adjusting pose detection...", (10, 50),
                              scale=0.65, color=(0, 180, 255))
 
@@ -1140,7 +1157,7 @@ def main():
                     "reps":       summary["total_reps"],
                     "goal":       engine.goal,
                     "stage":      "done",
-                    "feedback":   ["Session complete ✅"],
+                    "feedback":   ["Session complete âœ…"],
                     "accuracy":   summary["accuracy"],
                     "angles":     {},
                     "done":       True,
@@ -1167,6 +1184,11 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+
+
+
 
 
 
