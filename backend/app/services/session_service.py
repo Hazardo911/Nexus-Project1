@@ -6,6 +6,9 @@ from app.db.database import SessionLocal
 from app.db.crud import create_session as db_create_session
 import uuid
 
+# In-memory tracking for active sessions to support frontend polling
+_active_sessions = {}
+
 def create_db_session(user_id: str, mode: str):
     db = SessionLocal()
     try:
@@ -17,6 +20,15 @@ def create_db_session(user_id: str, mode: str):
             uid = uuid.uuid5(uuid.NAMESPACE_DNS, user_id)
         
         session = db_create_session(db, uid, mode)
+        
+        # Track active session
+        _active_sessions[user_id] = {
+            "session_id": session.id,
+            "mode": mode,
+            "start_time": datetime.utcnow().isoformat(),
+            "last_record": None
+        }
+        
         return session.id
     except Exception as e:
         logging.warning(f"Failed to create DB session for {user_id}: {e}")
@@ -24,8 +36,21 @@ def create_db_session(user_id: str, mode: str):
     finally:
         db.close()
 
+def get_active_session(user_id: str):
+    return _active_sessions.get(user_id)
+
+def stop_session(user_id: str):
+    if user_id in _active_sessions:
+        del _active_sessions[user_id]
+        return True
+    return False
+
 def log_session(user_id: str, record: dict) -> None:
     try:
+        # Update active session tracking
+        if user_id in _active_sessions:
+            _active_sessions[user_id]["last_record"] = record
+
         path = Path("sessions")
         path.mkdir(parents=True, exist_ok=True)
         file_path = path / f"{user_id}.json"

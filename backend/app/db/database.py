@@ -8,8 +8,14 @@ load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-if not DATABASE_URL:
-    raise ValueError("DATABASE_URL not set in environment")
+db_url = os.getenv("DATABASE_URL")
+
+if not db_url:
+    if os.getenv("CI") == "true":
+        print("⚡ CI mode: skipping DB connection")
+        db_url = "sqlite:///:memory:"  # dummy DB
+    else:
+        raise ValueError("DATABASE_URL not set in environment")
 
 # Connect with SSL required for Supabase
 engine = create_engine(DATABASE_URL, connect_args={"sslmode": "require"})
