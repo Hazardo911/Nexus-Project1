@@ -10,3 +10,11 @@ Flutter frontend scaffold for the exercise form detection project.
 - `lib/shared`: reusable widgets
 - `assets`: images, icons, animations
 - `test`: widget tests
+
+## How to run
+
+```
+flutter clean
+flutter pub get
+flutter run
+```
