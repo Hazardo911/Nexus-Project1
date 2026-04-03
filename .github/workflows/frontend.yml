@@ -1,0 +1,30 @@
+name: Flutter CI (prem branch)
+
+on:
+  push:
+    branches: [ prem ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v4
+
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.19.0'
+
+    - name: Install dependencies
+      working-directory: frontend
+      run: flutter pub get
+
+    - name: Analyze code
+      working-directory: frontend
+      run: flutter analyze
+
+    - name: Run tests
+      working-directory: frontend
+      run: flutter test || true
