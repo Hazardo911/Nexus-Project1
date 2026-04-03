@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nexus Stream Demo</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --panel-2: #1f2937;
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --accent: #22c55e;
+      --warn: #f59e0b;
+      --danger: #ef4444;
+    }
+    body {
+      margin: 0;
+      font-family: Segoe UI, Arial, sans-serif;
+      background: linear-gradient(135deg, #020617, #111827 45%, #0f172a);
+      color: var(--text);
+    }
+    .wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1.3fr 1fr;
+      gap: 20px;
+    }
+    .panel {
+      background: rgba(17, 24, 39, 0.92);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
+    }
+    h1, h2 {
+      margin: 0 0 12px;
+    }
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    label {
+      display: block;
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    input, select, button {
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      background: var(--panel-2);
+      color: var(--text);
+      padding: 10px 12px;
+      box-sizing: border-box;
+    }
+    button {
+      background: linear-gradient(135deg, #16a34a, #22c55e);
+      color: white;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+    }
+    button.secondary {
+      background: linear-gradient(135deg, #1d4ed8, #2563eb);
+    }
+    .actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 8px;
+    }
+    .video-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      border-radius: 14px;
+      overflow: hidden;
+      background: black;
+    }
+    video, canvas {
+      width: 100%;
+      height: 100%;
+      border-radius: 14px;
+      background: black;
+    }
+    #video {
+      object-fit: contain;
+      display: block;
+    }
+    #overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: transparent;
+    }
+    #canvas {
+      background: black;
+    }
+    .status {
+      margin: 12px 0;
+      font-weight: 700;
+    }
+    .guide-box {
+      margin-top: 12px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: rgba(30, 41, 59, 0.9);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+    .guide-box strong {
+      color: var(--text);
+      display: block;
+      margin-bottom: 4px;
+    }
+    .ok { color: var(--accent); }
+    .warning { color: var(--warn); }
+    .danger { color: var(--danger); }
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .feature {
+      background: rgba(31, 41, 55, 0.85);
+      border-radius: 12px;
+      padding: 10px 12px;
+    }
+    .feature .name {
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .feature .value {
+      font-size: 20px;
+      margin-top: 4px;
+    }
+    pre {
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: rgba(2, 6, 23, 0.9);
+      border-radius: 12px;
+      padding: 12px;
+      max-height: 260px;
+      overflow: auto;
+    }
+    @media (max-width: 900px) {
+      .grid, .controls {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Nexus Stream Demo</h1>
+    <p>Load a recorded video or a webcam stream, send frames to the backend, and watch the model output plus movement features update live.</p>
+
+    <div class="grid">
+      <section class="panel">
+        <h2>Source</h2>
+        <div class="controls">
+          <div>
+            <label for="mode">Mode</label>
+            <select id="mode">
+              <option value="fitness">Fitness</option>
+              <option value="rehab">Rehab</option>
+            </select>
+          </div>
+          <div>
+            <label for="userId">User ID</label>
+            <input id="userId" value="test_user" />
+          </div>
+          <div>
+            <label for="selectedExercise">Selected Exercise</label>
+            <select id="selectedExercise">
+              <option value="BodyWeightSquats">BodyWeightSquats</option>
+              <option value="Lunges">Lunges</option>
+              <option value="PushUps">PushUps</option>
+              <option value="WallPushups">WallPushups</option>
+              <option value="PullUps">PullUps</option>
+              <option value="BenchPress">BenchPress</option>
+              <option value="CleanAndJerk">CleanAndJerk</option>
+              <option value="HandstandPushups">HandstandPushups</option>
+              <option value="JumpingJack">JumpingJack</option>
+            </select>
+          </div>
+          <div>
+            <label for="injury">Injury</label>
+            <select id="injury">
+              <option value="ACL">ACL</option>
+              <option value="Back">Back</option>
+              <option value="Shoulder">Shoulder</option>
+            </select>
+          </div>
+          <div>
+            <label for="stage">Stage</label>
+            <select id="stage">
+              <option value="early">early</option>
+              <option value="mid">mid</option>
+              <option value="late">late</option>
+            </select>
+          </div>
+          <div>
+            <label for="fps">FPS</label>
+            <input id="fps" type="number" value="30" />
+          </div>
+          <div>
+            <label for="windowSeconds">Window Seconds</label>
+            <input id="windowSeconds" type="number" step="0.01" value="3.33" />
+          </div>
+        </div>
+
+        <label for="videoFile">Choose Video File</label>
+        <input id="videoFile" type="file" accept="video/*,.mp4,.mov,.avi,.mkv,.webm" />
+
+        <div class="actions">
+          <button id="playVideoBtn">Stream Selected Video</button>
+          <button id="uploadAnalyzeBtn" class="secondary">Analyze Uploaded Video</button>
+          <button id="cameraBtn" class="secondary">Use Webcam</button>
+        </div>
+
+        <div id="guideBox" class="guide-box">
+          <strong>Camera Guide</strong>
+          Position yourself clearly in frame before starting analysis.
+        </div>
+
+        <div class="status" id="statusText">Idle</div>
+        <div class="video-wrap">
+          <video id="video" controls playsinline muted></video>
+          <canvas id="overlay"></canvas>
+        </div>
+        <canvas id="canvas" style="display:none;"></canvas>
+      </section>
+
+      <section class="panel">
+        <h2>Live Output</h2>
+        <div id="resultSummary" class="status">No response yet.</div>
+        <div class="feature-grid" id="featureGrid"></div>
+        <h2 style="margin-top:16px;">Raw Response</h2>
+        <pre id="rawResponse">{}</pre>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const overlay = document.getElementById("overlay");
+    const rawResponse = document.getElementById("rawResponse");
+    const resultSummary = document.getElementById("resultSummary");
+    const featureGrid = document.getElementById("featureGrid");
+    const statusText = document.getElementById("statusText");
+    const guideBox = document.getElementById("guideBox");
+    const videoFile = document.getElementById("videoFile");
+    const playVideoBtn = document.getElementById("playVideoBtn");
+    const uploadAnalyzeBtn = document.getElementById("uploadAnalyzeBtn");
+    const cameraBtn = document.getElementById("cameraBtn");
+
+    let ws = null;
+    let captureTimer = null;
+    let cameraStream = null;
+    let objectUrl = null;
+    let frameInFlight = false;
+
+    function wsUrl() {
+      const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+      return `${protocol}://${window.location.host}/stream`;
+    }
+
+    function configPayload() {
+      return {
+        mode: document.getElementById("mode").value,
+        user_id: document.getElementById("userId").value,
+        selected_exercise: document.getElementById("selectedExercise").value,
+        injury: document.getElementById("injury").value,
+        stage: document.getElementById("stage").value,
+        fps: Number(document.getElementById("fps").value),
+        window_seconds: Number(document.getElementById("windowSeconds").value),
+      };
+    }
+
+    function guideTextForExercise() {
+      const exercise = document.getElementById("selectedExercise").value;
+      const lowerBody = ["BodyWeightSquats", "Lunges", "CleanAndJerk", "JumpingJack"];
+      const upperBody = ["PushUps", "WallPushups", "PullUps", "BenchPress", "HandstandPushups"];
+
+      if (lowerBody.includes(exercise)) {
+        return {
+          title: "Camera Guide",
+          body: "For best results, keep your shoulders, hips, and knees visible. Ankles help, but in a small room the system can still work if the camera is tilted slightly downward.",
+        };
+      }
+      if (upperBody.includes(exercise)) {
+        return {
+          title: "Camera Guide",
+          body: "Keep your upper body and arms clearly visible. For best tracking, include your shoulders, elbows, wrists, and as much torso as possible.",
+        };
+      }
+      return {
+        title: "Camera Guide",
+        body: "Position yourself clearly in frame before starting analysis.",
+      };
+    }
+
+    function updateGuideBox() {
+      const guide = guideTextForExercise();
+      guideBox.innerHTML = `<strong>${guide.title}</strong>${guide.body}`;
+    }
+
+    function setSummary(text, cls = "") {
+      resultSummary.className = `status ${cls}`;
+      resultSummary.textContent = text;
+    }
+
+    function resetOutput(message = "Idle") {
+      rawResponse.textContent = "{}";
+      featureGrid.innerHTML = "";
+      overlay.width = video.clientWidth || overlay.width || 1;
+      overlay.height = video.clientHeight || overlay.height || 1;
+      const ctx = overlay.getContext("2d");
+      ctx.clearRect(0, 0, overlay.width, overlay.height);
+      setSummary(message);
+      statusText.textContent = message;
+      updateGuideBox();
+    }
+
+    function clearVideoPreview() {
+      video.pause();
+      video.removeAttribute("src");
+      video.srcObject = null;
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+        objectUrl = null;
+      }
+      video.load();
+    }
+
+    function stopStreaming(stopCamera = true, clearPreview = false) {
+      if (captureTimer) {
+        clearInterval(captureTimer);
+        captureTimer = null;
+      }
+      if (ws) {
+        ws.close();
+        ws = null;
+      }
+      if (stopCamera && cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+        cameraStream = null;
+      }
+      if (clearPreview) {
+        clearVideoPreview();
+      }
+      frameInFlight = false;
+    }
+
+    function renderFeatures(payload) {
+      const source = payload.features || payload;
+      const keys = [
+        "avg_knee_angle",
+        "min_knee_angle",
+        "max_knee_angle",
+        "hip_angle_avg",
+        "back_angle",
+        "symmetry_score",
+        "speed",
+        "stability",
+        "depth",
+        "coordination_score"
+      ];
+      featureGrid.innerHTML = "";
+      keys.forEach(key => {
+        if (source[key] === undefined || source[key] === null) {
+          return;
+        }
+        const item = document.createElement("div");
+        item.className = "feature";
+        const value = typeof source[key] === "number" ? source[key].toFixed(3) : String(source[key]);
+        item.innerHTML = `<div class="name">${key}</div><div class="value">${value}</div>`;
+        featureGrid.appendChild(item);
+      });
+    }
+
+    function drawLandmarks(landmarks, connections) {
+      if (!landmarks || !landmarks.length) {
+        return;
+      }
+      overlay.width = video.clientWidth;
+      overlay.height = video.clientHeight;
+      const ctx = overlay.getContext("2d");
+      ctx.clearRect(0, 0, overlay.width, overlay.height);
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = "#22c55e";
+      ctx.fillStyle = "#38bdf8";
+
+      connections.forEach(([a, b]) => {
+        const pa = landmarks[a];
+        const pb = landmarks[b];
+        if (!pa || !pb) {
+          return;
+        }
+        ctx.beginPath();
+        ctx.moveTo(pa.x * overlay.width, pa.y * overlay.height);
+        ctx.lineTo(pb.x * overlay.width, pb.y * overlay.height);
+        ctx.stroke();
+      });
+
+      landmarks.forEach(point => {
+        ctx.beginPath();
+        ctx.arc(point.x * overlay.width, point.y * overlay.height, 5, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+
+    function handleMessage(data) {
+      rawResponse.textContent = JSON.stringify(data, null, 2);
+      renderFeatures(data);
+      drawLandmarks(data.landmarks || [], data.connections || []);
+
+      if (data.status === "buffering") {
+        setSummary(`Buffering ${data.frames}/${data.needed}`, "warning");
+        return;
+      }
+
+      if (data.status === "waiting_for_movement") {
+        drawLandmarks(data.landmarks || [], data.connections || []);
+        setSummary(data.message || "Pose detected. Start moving to begin analysis.", "warning");
+        return;
+      }
+
+      if (data.status === "pose_partial") {
+        drawLandmarks(data.landmarks || [], data.connections || []);
+        setSummary(data.message || "Pose detected. Adjust the camera a little so more target joints are visible.", "warning");
+        return;
+      }
+
+      if (data.status === "ok") {
+        const exercise = data.model?.exercise || "unknown";
+        const confidence = data.model?.confidence ?? "";
+        const family = data.model?.movement_family_label || "";
+        const selected = data.selected_exercise || "";
+        const formStatus = data.form_status ? ` - ${data.form_status}` : "";
+        if (data.model?.source === "selected_exercise") {
+          setSummary(`Selected Exercise ${selected}${family ? ` - ${family}` : ""}${formStatus}`, "ok");
+        } else {
+          setSummary(`Selected ${selected}${selected ? " | " : ""}Model ${exercise} (${confidence})${family ? ` - ${family}` : ""}${formStatus}`, "ok");
+        }
+        return;
+      }
+
+      if (data.status === "no_detection") {
+        resetOutput("No clear body pose detected. Move into view and keep the main exercise joints visible.");
+        setSummary("No clear body pose detected. Move into view and keep the main exercise joints visible.", "warning");
+        return;
+      }
+
+      if (data.status === "safe" || data.status === "danger") {
+        setSummary(`${data.status.toUpperCase()} - ${data.feedback || ""}`, data.status === "safe" ? "ok" : "danger");
+        return;
+      }
+
+      if (data.status === "error") {
+        setSummary(`Error: ${data.message}`, "danger");
+        return;
+      }
+
+      setSummary(data.status || "Response received");
+    }
+
+    async function connectAndStart(options = {}) {
+      const { preserveCamera = false } = options;
+      stopStreaming(!preserveCamera);
+      resetOutput("Connecting stream...");
+      ws = new WebSocket(wsUrl());
+      ws.binaryType = "arraybuffer";
+
+      ws.onopen = () => {
+        ws.send(JSON.stringify(configPayload()));
+        statusText.textContent = "Streaming...";
+
+        const fps = Math.max(1, Math.min(12, Number(document.getElementById("fps").value) || 10));
+        captureTimer = setInterval(async () => {
+          if (
+            ws.readyState !== WebSocket.OPEN ||
+            video.paused ||
+            video.ended ||
+            frameInFlight ||
+            ws.bufferedAmount > 0
+          ) {
+            return;
+          }
+
+          canvas.width = video.videoWidth || 640;
+          canvas.height = video.videoHeight || 480;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          canvas.toBlob(async blob => {
+            if (!blob || ws.readyState !== WebSocket.OPEN) {
+              return;
+            }
+            frameInFlight = true;
+            ws.send(await blob.arrayBuffer());
+          }, "image/jpeg", 0.8);
+        }, Math.round(1000 / fps));
+      };
+
+      ws.onmessage = event => {
+        frameInFlight = false;
+        handleMessage(JSON.parse(event.data));
+      };
+      ws.onclose = () => { statusText.textContent = "Stream closed"; };
+      ws.onerror = () => {
+        frameInFlight = false;
+        statusText.textContent = "WebSocket error";
+      };
+    }
+
+    playVideoBtn.addEventListener("click", async () => {
+      if (!videoFile.files.length) {
+        setSummary("Choose a video file first.", "danger");
+        return;
+      }
+      const file = videoFile.files[0];
+      stopStreaming(true, true);
+      resetOutput("Preparing browser stream...");
+      objectUrl = URL.createObjectURL(file);
+      video.src = objectUrl;
+      try {
+        await new Promise((resolve) => {
+          video.onloadedmetadata = () => resolve();
+        });
+        await video.play();
+        await connectAndStart();
+      } catch (error) {
+        setSummary(`Browser preview could not start. Try Analyze Uploaded Video instead.`, "warning");
+      }
+    });
+
+    uploadAnalyzeBtn.addEventListener("click", async () => {
+      if (!videoFile.files.length) {
+        setSummary("Choose a video file first.", "danger");
+        return;
+      }
+
+      stopStreaming(true, true);
+      resetOutput("Uploading video for backend analysis...");
+
+      const file = videoFile.files[0];
+      objectUrl = URL.createObjectURL(file);
+      video.src = objectUrl;
+      video.load();
+
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("mode", document.getElementById("mode").value);
+      formData.append("user_id", document.getElementById("userId").value);
+      formData.append("selected_exercise", document.getElementById("selectedExercise").value);
+      formData.append("injury", document.getElementById("injury").value);
+      formData.append("stage", document.getElementById("stage").value);
+      formData.append("fps", document.getElementById("fps").value);
+      formData.append("window_seconds", document.getElementById("windowSeconds").value);
+
+      try {
+        const response = await fetch("/demo/analyze-video", {
+          method: "POST",
+          body: formData
+        });
+        const data = await response.json();
+        handleMessage(data);
+        statusText.textContent = `Uploaded video analyzed (${data.processed_frames || 0} frames).`;
+      } catch (error) {
+        setSummary(`Upload analysis failed: ${error.message}`, "danger");
+        statusText.textContent = "Upload failed";
+      }
+    });
+
+    cameraBtn.addEventListener("click", async () => {
+      try {
+        stopStreaming(true, true);
+        resetOutput("Requesting camera access...");
+        cameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        video.srcObject = cameraStream;
+        video.muted = true;
+        video.autoplay = true;
+        video.playsInline = true;
+        await new Promise((resolve) => {
+          video.onloadedmetadata = () => resolve();
+        });
+        await video.play();
+        statusText.textContent = "Camera ready";
+        await connectAndStart({ preserveCamera: true });
+      } catch (error) {
+        setSummary(`Camera error: ${error.message}`, "danger");
+      }
+    });
+
+    videoFile.addEventListener("change", () => {
+      stopStreaming(true, true);
+      resetOutput("Video selected. Ready to stream or analyze.");
+    });
+
+    ["mode", "selectedExercise", "injury", "stage", "fps", "windowSeconds"].forEach((id) => {
+      document.getElementById(id).addEventListener("change", () => {
+        stopStreaming(true, true);
+        resetOutput("Settings updated. Start a new stream.");
+      });
+    });
+
+    updateGuideBox();
+    window.addEventListener("beforeunload", () => stopStreaming(true, true));
+  </script>
+</body>
+</html>
