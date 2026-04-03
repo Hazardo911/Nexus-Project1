@@ -58,7 +58,7 @@ class NexusApiService {
       final responseBody = await response.transform(utf8.decoder).join().timeout(const Duration(minutes: 2));
       final decoded = responseBody.isEmpty ? <String, dynamic>{} : await compute(_decodeAndTrimApiMap, responseBody);
       if (response.statusCode >= 200 && response.statusCode < 300) {
-        return decoded;
+        return _attachSummary(decoded, userId);
       }
       throw NexusApiException(
         statusCode: response.statusCode,
@@ -82,6 +82,32 @@ class NexusApiService {
   static Future<Map<String, dynamic>> getLatestResult({String userId = defaultUserId}) async {
     final encodedUserId = Uri.encodeQueryComponent(userId);
     return _request('GET', '/latest-result/?user_id=$encodedUserId');
+  }
+
+  static Future<Map<String, dynamic>> analyzeLiveFrame({
+    required String imagePath,
+    required String selectedExercise,
+    String userId = defaultUserId,
+    int fps = 30,
+    double windowSeconds = 3.33,
+  }) async {
+    final mappedExercise = _mapExercise(selectedExercise) ?? selectedExercise;
+    final file = File(imagePath);
+    if (!await file.exists()) {
+      throw const NexusApiException(statusCode: 0, message: 'Captured image file could not be found.');
+    }
+
+    final bytes = await file.readAsBytes();
+    final payload = <String, dynamic>{
+      'user_id': userId,
+      'selected_exercise': mappedExercise,
+      'frame_jpeg': base64Encode(bytes),
+      'fps': fps,
+      'window_seconds': windowSeconds,
+    };
+
+    final result = await _request('POST', '/analyze/', body: payload);
+    return _attachSummary(result, userId);
   }
 
   static String? _mapExercise(String? exercise) {
@@ -169,4 +195,18 @@ Map<String, dynamic> _trimHeavyPayload(Map<String, dynamic> source) {
   }
 
   return source;
+}
+
+Future<Map<String, dynamic>> _attachSummary(Map<String, dynamic> source, String userId) async {
+  try {
+    final summary = await NexusApiService.getSummary(userId: userId);
+    return <String, dynamic>{
+      ...source,
+      if (summary['weekly_summary'] != null) 'weekly_summary': summary['weekly_summary'],
+      if (summary['monthly_summary'] != null) 'monthly_summary': summary['monthly_summary'],
+      if (summary['safe_session_rate'] != null && source['score'] == null) 'safe_session_rate': summary['safe_session_rate'],
+    };
+  } catch (_) {
+    return source;
+  }
 }

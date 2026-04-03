@@ -95,6 +95,40 @@ class _UploadScreenState extends State<UploadScreen> {
     await _setSelectedVideo(file.name, 'File Manager', file.path);
   }
 
+  Future<void> _captureLiveFrame() async {
+    final image = await _picker.pickImage(source: ImageSource.camera, imageQuality: 85);
+    if (!mounted || image == null) return;
+
+    setState(() {
+      _startingAnalysis = true;
+      _activeAction = 'live';
+    });
+
+    try {
+      final result = await NexusApiService.analyzeLiveFrame(
+        imagePath: image.path,
+        selectedExercise: _selectedExercise!,
+      );
+      final cleanedResult = _sanitizeResultForUi(result);
+      LatestAnalysisStore.save(cleanedResult);
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(
+        context,
+        AppRoutes.results,
+        arguments: cleanedResult,
+      );
+    } on NexusApiException catch (error) {
+      _showInfoMessage(error.message);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _startingAnalysis = false;
+          _activeAction = null;
+        });
+      }
+    }
+  }
+
   Future<void> _setSelectedVideo(String name, String source, String? path) async {
     await AppHaptics.mediumImpact();
     setState(() {
@@ -118,7 +152,7 @@ class _UploadScreenState extends State<UploadScreen> {
       return;
     }
     if (liveMode) {
-      _showInfoMessage('Live stream wiring is next. Use uploaded video analysis for the working backend flow right now.');
+      await _captureLiveFrame();
       return;
     }
     if (_selectedVideoName == null || _selectedVideoPath == null) {
