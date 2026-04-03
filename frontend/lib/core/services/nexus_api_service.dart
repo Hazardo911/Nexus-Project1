@@ -1,18 +1,52 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class NexusApiService {
   NexusApiService._();
 
-  static const String baseUrl = 'http://127.0.0.1:8000';
+  static const String baseUrl = 'http://10.0.2.2:8000';
+  static const _storage = FlutterSecureStorage();
+  static const _tokenKey = 'access_token';
+  static const _userIdKey = 'user_id';
+  static const _userNameKey = 'user_name';
+
+  static Future<String?> get token => _storage.read(key: _tokenKey);
+  static Future<String?> get userId => _storage.read(key: _userIdKey);
+  static Future<String?> get userName => _storage.read(key: _userNameKey);
+
+  static Future<Map<String, dynamic>> login(String email, String password) async {
+    final body = {'email': email, 'password': password};
+    final response = await _request('POST', '/login', body: body);
+    await _saveAuthData(response);
+    return response;
+  }
+
+  static Future<Map<String, dynamic>> register(String name, String email, String password) async {
+    final body = {'name': name, 'email': email, 'password': password};
+    final response = await _request('POST', '/register', body: body);
+    await _saveAuthData(response);
+    return response;
+  }
+
+  static Future<void> logout() async {
+    await _storage.deleteAll();
+  }
+
+  static Future<void> _saveAuthData(Map<String, dynamic> data) async {
+    await _storage.write(key: _tokenKey, value: data['access_token']);
+    await _storage.write(key: _userIdKey, value: data['user_id']);
+    await _storage.write(key: _userNameKey, value: data['name']);
+  }
 
   static Future<Map<String, dynamic>> startSession({String? exercise}) async {
-    final body = <String, dynamic>{};
+    final uid = await userId;
+    final body = <String, dynamic>{'user_id': uid ?? 'anonymous'};
     final mappedExercise = _mapExercise(exercise);
     if (mappedExercise != null) {
       body['exercise'] = mappedExercise;
     }
-    return _request('POST', '/start', body: body.isEmpty ? null : body);
+    return _request('POST', '/start', body: body);
   }
 
   static String? _mapExercise(String? exercise) {
@@ -60,10 +94,24 @@ class NexusApiService {
     Map<String, dynamic>? body,
   }) async {
     final client = HttpClient();
+    final authToken = await token;
+    final uid = await userId;
+    
+    // Add user_id to query params if not in body
+    final uri = Uri.parse('$baseUrl$path').replace(
+      queryParameters: {
+        ...Uri.parse('$baseUrl$path').queryParameters,
+        if (uid != null) 'user_id': uid,
+      },
+    );
+
     try {
-      final request = await client.openUrl(method, Uri.parse('$baseUrl$path'));
+      final request = await client.openUrl(method, uri);
       request.headers.set(HttpHeaders.contentTypeHeader, 'application/json');
       request.headers.set(HttpHeaders.acceptHeader, 'application/json');
+      if (authToken != null) {
+        request.headers.set(HttpHeaders.authorizationHeader, 'Bearer $authToken');
+      }
       if (body != null) {
         request.write(jsonEncode(body));
       }

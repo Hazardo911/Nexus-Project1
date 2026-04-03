@@ -37,11 +37,11 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   }
 
   void _openGetStarted() {
-    Navigator.pushReplacementNamed(context, AppRoutes.home);
+    Navigator.pushNamed(context, AppRoutes.auth, arguments: {'isLogin': false});
   }
 
   void _openLogin() {
-    Navigator.pushReplacementNamed(context, AppRoutes.auth);
+    Navigator.pushNamed(context, AppRoutes.auth, arguments: {'isLogin': true});
   }
 
   @override

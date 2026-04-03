@@ -3,8 +3,12 @@ from . import models
 import uuid
 from datetime import datetime
 
-def create_user(db: Session, name: str, email: str):
-    db_user = models.User(name=name, email=email)
+def get_user_by_email(db: Session, email: str):
+    return db.query(models.User).filter(models.User.email == email).first()
+
+def create_user(db: Session, name: str, email: str, password: str = None):
+    # This will be called with hashed_password from the auth logic
+    db_user = models.User(name=name, email=email, hashed_password=password)
     db.add(db_user)
     db.commit()
     db.refresh(db_user)

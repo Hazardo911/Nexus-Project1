@@ -23,12 +23,32 @@ class AppShell extends StatelessWidget {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        leadingWidth: 72,
+        automaticallyImplyLeading: false,
         leading: showBack
             ? Padding(
-                padding: const EdgeInsets.only(left: 12),
-                child: _CircleIconButton(
-                  icon: Icons.arrow_back_rounded,
-                  onTap: () => Navigator.of(context).maybePop(),
+                padding: const EdgeInsets.only(left: 8),
+                child: Center(
+                  child: InkWell(
+                    onTap: () => Navigator.of(context).pop(),
+                    borderRadius: BorderRadius.circular(30),
+                    child: Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: AppColors.white.withValues(alpha: 0.12),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        color: AppColors.white,
+                        size: 20,
+                      ),
+                    ),
+                  ),
                 ),
               )
             : null,

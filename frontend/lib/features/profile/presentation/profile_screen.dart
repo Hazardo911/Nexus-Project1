@@ -6,8 +6,18 @@ import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/glass_card.dart';
 import '../../../shared/widgets/widgets.dart';
 
+import '../../../core/services/nexus_api_service.dart';
+
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
+
+  Future<void> _logout(BuildContext context) async {
+    await NexusApiService.logout();
+    if (context.mounted) {
+      // Clear everything and go back to the very beginning (Splash)
+      Navigator.pushNamedAndRemoveUntil(context, AppRoutes.splash, (route) => false);
+    }
+  }
 
   Future<void> _updateToggle(void Function(bool) setter, bool value) async {
     setter(value);
@@ -45,7 +55,12 @@ class ProfileScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Aayush Dhuri', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 22)),
+                      FutureBuilder<String?>(
+                        future: NexusApiService.userName,
+                        builder: (context, snapshot) {
+                          return Text(snapshot.data ?? 'User', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 22));
+                        },
+                      ),
                       const SizedBox(height: 6),
                       Text('Premium Member', style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: AppColors.terracotta)),
                       const SizedBox(height: 10),
@@ -133,7 +148,7 @@ class ProfileScreen extends StatelessWidget {
           const _SettingsTile(icon: Icons.tune_rounded, title: 'Analysis Preferences', subtitle: 'Default exercise type and feedback detail', trailing: Icon(Icons.arrow_forward_ios_rounded, size: 18)),
           const SizedBox(height: 26),
           FilledButton(
-            onPressed: () {},
+            onPressed: () => _logout(context),
             style: FilledButton.styleFrom(backgroundColor: AppColors.softCharcoal, padding: const EdgeInsets.symmetric(vertical: 18), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24))),
             child: const Text('Sign Out'),
           ),
