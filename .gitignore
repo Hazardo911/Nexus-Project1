@@ -1,0 +1,132 @@
+# =========================
+# 🔐 ENV / SECRETS
+# =========================
+.env
+.env.*
+*.env
+
+# =========================
+# 🐍 PYTHON
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Python build
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# =========================
+# 🧠 ML / MODEL FILES
+# =========================
+*.pth
+*.pt
+*.onnx
+*.h5
+*.ckpt
+
+# =========================
+# 📊 DATA / SESSIONS
+# =========================
+sessions/
+*.sqlite3
+*.db
+*.csv
+*.tsv
+
+# =========================
+# 🎥 MEDIA FILES
+# =========================
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.jpg
+*.jpeg
+*.png
+
+# =========================
+# 🧪 LOGS / DEBUG
+# =========================
+*.log
+logs/
+
+# =========================
+# ⚡ CACHE / TEMP
+# =========================
+.cache/
+tmp/
+temp/
+*.tmp
+*.bak
+
+# =========================
+# 🧠 IDE / EDITORS
+# =========================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# =========================
+# 🖥️ OS FILES
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# 📦 NODE / JS (if added later)
+# =========================
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# =========================
+# 📱 FLUTTER / DART
+# =========================
+.dart_tool/
+.packages
+.pub/
+.pub-cache/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# =========================
+# 🧱 JAVA / GRADLE (if used)
+# =========================
+*.class
+*.jar
+*.war
+.gradle/
+build/
+target/
+
+# =========================
+# 🐳 DOCKER
+# =========================
+*.pid
+*.seed
+
+# =========================
+# 🔑 KEYS / CERTS
+# =========================
+*.pem
+*.key
+*.crt
+
+# =========================
+# 🧼 MISC
+# =========================
+*.orig
+*.rej
