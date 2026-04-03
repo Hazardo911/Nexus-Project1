@@ -30,5 +30,5 @@ def analyze(request: AnalyzeRequest):
     buffer = TemporalBuffer(fps=request.fps, window_seconds=request.window_seconds)
     frame = _decode_frame(request.frame_jpeg)
     return AnalyzeResponse.model_validate(
-        analysis_service(frame, buffer, request.user_id, request.selected_exercise)
+        analysis_service(frame, buffer, request.user_id, request.selected_exercise, session_id=request.session_id)
     )

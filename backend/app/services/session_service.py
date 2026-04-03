@@ -2,7 +2,27 @@ import json
 import logging
 from datetime import datetime
 from pathlib import Path
+from app.db.database import SessionLocal
+from app.db.crud import create_session as db_create_session
+import uuid
 
+def create_db_session(user_id: str, mode: str):
+    db = SessionLocal()
+    try:
+        # Check if user_id is a valid UUID, if not use a namespace to generate one
+        try:
+            uid = uuid.UUID(user_id)
+        except ValueError:
+            # Create a deterministic UUID for the user_id string
+            uid = uuid.uuid5(uuid.NAMESPACE_DNS, user_id)
+        
+        session = db_create_session(db, uid, mode)
+        return session.id
+    except Exception as e:
+        logging.warning(f"Failed to create DB session for {user_id}: {e}")
+        return None
+    finally:
+        db.close()
 
 def log_session(user_id: str, record: dict) -> None:
     try:
