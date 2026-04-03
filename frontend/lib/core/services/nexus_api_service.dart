@@ -18,6 +18,7 @@ class NexusApiService {
     String stage = 'early',
     int fps = 30,
     double windowSeconds = 3.33,
+    bool includeVisuals = false,
   }) async {
     final mappedExercise = _mapExercise(selectedExercise) ?? selectedExercise;
     final file = File(videoPath);
@@ -45,7 +46,7 @@ class NexusApiService {
       writeField('stage', stage);
       writeField('fps', '$fps');
       writeField('window_seconds', '$windowSeconds');
-      writeField('include_visuals', 'false');
+      writeField('include_visuals', includeVisuals ? 'true' : 'false');
 
       final filename = videoPath.split(Platform.pathSeparator).last;
       request.write('--$boundary\r\n');
@@ -56,9 +57,13 @@ class NexusApiService {
 
       final response = await request.close().timeout(const Duration(minutes: 2));
       final responseBody = await response.transform(utf8.decoder).join().timeout(const Duration(minutes: 2));
-      final decoded = responseBody.isEmpty ? <String, dynamic>{} : await compute(_decodeAndTrimApiMap, responseBody);
+      final decoded = responseBody.isEmpty
+          ? <String, dynamic>{}
+          : includeVisuals
+              ? await compute(_decodeApiMap, responseBody)
+              : await compute(_decodeAndTrimApiMap, responseBody);
       if (response.statusCode >= 200 && response.statusCode < 300) {
-        return _attachSummary(decoded, userId);
+        return _attachSummary(<String, dynamic>{...decoded, 'mode': mode}, userId);
       }
       throw NexusApiException(
         statusCode: response.statusCode,
@@ -81,7 +86,12 @@ class NexusApiService {
 
   static Future<Map<String, dynamic>> getLatestResult({String userId = defaultUserId}) async {
     final encodedUserId = Uri.encodeQueryComponent(userId);
-    return _request('GET', '/latest-result/?user_id=$encodedUserId');
+    return _request('GET', '/latest-result/?user_id=$encodedUserId', preserveVisuals: true);
+  }
+
+  static Future<Map<String, dynamic>> getSessions({String userId = defaultUserId, int limit = 20}) async {
+    final encodedUserId = Uri.encodeQueryComponent(userId);
+    return _request('GET', '/sessions?user_id=$encodedUserId&limit=$limit', preserveVisuals: true);
   }
 
   static Future<Map<String, dynamic>> analyzeLiveFrame({
@@ -107,7 +117,7 @@ class NexusApiService {
     };
 
     final result = await _request('POST', '/analyze/', body: payload);
-    return _attachSummary(result, userId);
+    return _attachSummary(<String, dynamic>{...result, 'mode': 'fitness'}, userId);
   }
 
   static String? _mapExercise(String? exercise) {
@@ -131,6 +141,7 @@ class NexusApiService {
     String method,
     String path, {
     Map<String, dynamic>? body,
+    bool preserveVisuals = false,
   }) async {
     final client = HttpClient();
     try {
@@ -142,7 +153,11 @@ class NexusApiService {
       }
       final response = await request.close().timeout(const Duration(seconds: 30));
       final responseBody = await response.transform(utf8.decoder).join().timeout(const Duration(seconds: 30));
-      final decoded = responseBody.isEmpty ? <String, dynamic>{} : await compute(_decodeAndTrimApiMap, responseBody);
+      final decoded = responseBody.isEmpty
+          ? <String, dynamic>{}
+          : preserveVisuals
+              ? await compute(_decodeApiMap, responseBody)
+              : await compute(_decodeAndTrimApiMap, responseBody);
       if (response.statusCode >= 200 && response.statusCode < 300) {
         return decoded;
       }
@@ -177,6 +192,14 @@ Map<String, dynamic> _decodeAndTrimApiMap(String responseBody) {
     return <String, dynamic>{};
   }
   return _trimHeavyPayload(Map<String, dynamic>.from(decoded));
+}
+
+Map<String, dynamic> _decodeApiMap(String responseBody) {
+  final decoded = jsonDecode(responseBody);
+  if (decoded is! Map) {
+    return <String, dynamic>{};
+  }
+  return Map<String, dynamic>.from(decoded);
 }
 
 Map<String, dynamic> _trimHeavyPayload(Map<String, dynamic> source) {

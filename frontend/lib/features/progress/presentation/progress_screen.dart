@@ -22,6 +22,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
   String? _error;
   bool _didLoadArgs = false;
   String _userId = NexusApiService.defaultUserId;
+  _MetricType _selectedMetric = _MetricType.safety;
 
   @override
   void initState() {
@@ -78,6 +79,9 @@ class _ProgressScreenState extends State<ProgressScreen> {
         return;
       }
       LatestAnalysisStore.save(latest);
+      if (latest['landmarks'] != null || latest['connections'] != null) {
+        LatestAnalysisStore.saveVisual(latest);
+      }
       Navigator.pushNamed(context, AppRoutes.results, arguments: latest);
     } on NexusApiException catch (error) {
       if (!mounted) return;
@@ -90,11 +94,20 @@ class _ProgressScreenState extends State<ProgressScreen> {
     final weeklySummary = _extractMap(_summary['weekly_summary']);
     final monthlySummary = _extractMap(_summary['monthly_summary']);
     final totalSummary = _buildTopLevelSummary(_summary);
-    final selectedExercise = _summary['selected_exercise']?.toString() ?? _summary['exercise']?.toString() ?? _summary['user_id']?.toString() ?? 'Recovery';
-    final score = _toDouble(_summary['safe_session_rate'] ?? _summary['score'] ?? _summary['accuracy']) ?? 0;
-    final formStatus = _summary['message']?.toString() ?? 'No session yet';
-    final weeklyValues = _buildWeeklySeries(weeklySummary);
-    final hasWeeklyChartData = weeklyValues.isNotEmpty;
+    final selectedExercise = _summary['selected_exercise']?.toString() ??
+        _summary['exercise']?.toString() ??
+        _summary['user_id']?.toString() ??
+        'Recovery';
+    final statusText = _summary['message']?.toString() ?? 'Tracking your movement quality';
+
+    final chartPoints = _buildMetricPoints(
+      metric: _selectedMetric,
+      weekly: weeklySummary,
+      monthly: monthlySummary,
+      total: totalSummary,
+    );
+    final averageScore = chartPoints.isEmpty ? 0.0 : chartPoints.map((point) => point.value).reduce((a, b) => a + b) / chartPoints.length;
+    final highlight = _metricHighlight(_selectedMetric, chartPoints);
 
     return AppShell(
       title: 'Progress',
@@ -102,11 +115,19 @@ class _ProgressScreenState extends State<ProgressScreen> {
       child: ListView(
         padding: const EdgeInsets.fromLTRB(2, 12, 2, 30),
         children: [
-          Text('Recovery Analytics', style: Theme.of(context).textTheme.displaySmall?.copyWith(fontSize: 28, color: AppColors.white)),
+          Text(
+            'Recovery Analytics',
+            style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                  fontSize: 28,
+                  color: AppColors.white,
+                ),
+          ),
           const SizedBox(height: 10),
           Text(
-            'Track rehab recovery, weekly summaries, monthly trends, and session quality from the updated backend.',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: AppColors.white.withValues(alpha: 0.68)),
+            'Track how your form, safety, symmetry, and stability are trending over time.',
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: AppColors.white.withValues(alpha: 0.68),
+                ),
           ),
           const SizedBox(height: 22),
           GlassCard(
@@ -129,129 +150,215 @@ class _ProgressScreenState extends State<ProgressScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(selectedExercise, style: Theme.of(context).textTheme.titleLarge?.copyWith(color: AppColors.white, fontSize: 20)),
+                      Text(
+                        selectedExercise,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              color: AppColors.white,
+                              fontSize: 20,
+                            ),
+                      ),
                       const SizedBox(height: 6),
-                      Text('Form status: $formStatus', style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: AppColors.white.withValues(alpha: 0.72))),
+                      Text(
+                        statusText,
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                              color: AppColors.white.withValues(alpha: 0.72),
+                            ),
+                      ),
                     ],
                   ),
                 ),
-                Text('${score.round()}%', style: Theme.of(context).textTheme.displaySmall?.copyWith(color: AppColors.white, fontSize: 28)),
               ],
             ),
           ),
           const SizedBox(height: 20),
           if (_loading)
-            const _InfoCard(message: 'Loading backend summary...')
+            const _InfoCard(message: 'Loading recovery analytics...')
           else if (_error != null && _summary.isEmpty)
             _InfoCard(message: _error!)
           else ...[
+            Text(
+              'Interactive Trends',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontSize: 22,
+                    color: AppColors.white,
+                  ),
+            ),
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: _MetricType.values
+                  .map(
+                    (metric) => _MetricChip(
+                      label: metric.label,
+                      tint: metric.tint,
+                      selected: metric == _selectedMetric,
+                      onTap: () => setState(() => _selectedMetric = metric),
+                    ),
+                  )
+                  .toList(),
+            ),
+            const SizedBox(height: 16),
             GlassCard(
               radius: 30,
-              padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
-              color: AppColors.white.withValues(alpha: 0.88),
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 22),
+              color: AppColors.white.withValues(alpha: 0.9),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Wrap(
                     alignment: WrapAlignment.spaceBetween,
-                    runSpacing: 8,
+                    runSpacing: 10,
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
-                      Text('Weekly Rehab Summary', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 20)),
-                      TextButton.icon(onPressed: _loadSummary, icon: const Icon(Icons.refresh_rounded), label: const Text('Refresh')),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${_selectedMetric.label} Trend',
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 20),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Tap another metric to explore a different view.',
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  color: AppColors.softCharcoal.withValues(alpha: 0.64),
+                                ),
+                          ),
+                        ],
+                      ),
+                      TextButton.icon(
+                        onPressed: _loadSummary,
+                        icon: const Icon(Icons.refresh_rounded),
+                        label: const Text('Refresh'),
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 24),
-                  if (hasWeeklyChartData)
-                    SizedBox(height: 190, child: BarChart(_weeklyBarData(context, weeklyValues)))
-                  else
+                  const SizedBox(height: 18),
+                  if (chartPoints.isEmpty)
                     Container(
-                      height: 190,
+                      height: 220,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(22),
-                        color: AppColors.warmCream.withValues(alpha: 0.6),
+                        borderRadius: BorderRadius.circular(24),
+                        color: AppColors.warmCream.withValues(alpha: 0.8),
                       ),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 18),
                         child: Text(
-                          'Not enough weekly rehab data yet. Upload a few more rehab sessions to unlock the chart.',
+                          'Run a few more sessions to unlock this graph view.',
                           textAlign: TextAlign.center,
                           style: Theme.of(context).textTheme.bodyLarge,
                         ),
                       ),
+                    )
+                  else ...[
+                    SizedBox(
+                      height: 220,
+                      child: LineChart(_buildLineChartData(context, chartPoints, _selectedMetric.tint)),
                     ),
-                  const SizedBox(height: 20),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
-                    decoration: BoxDecoration(borderRadius: BorderRadius.circular(22), color: AppColors.warmCream.withValues(alpha: 0.82)),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    const SizedBox(height: 18),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
                       children: [
-                        Container(width: 56, height: 56, decoration: BoxDecoration(color: AppColors.terracotta, borderRadius: BorderRadius.circular(18)), child: const Icon(Icons.trending_up_rounded, color: AppColors.white)),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Weekly Average', style: Theme.of(context).textTheme.bodyMedium),
-                              const SizedBox(height: 6),
-                              Text(hasWeeklyChartData ? '${_average(weeklyValues).toStringAsFixed(1)}%' : 'N/A', style: Theme.of(context).textTheme.displaySmall?.copyWith(fontSize: 22)),
-                            ],
-                          ),
+                        _TrendValueCard(
+                          label: 'Average',
+                          value: '${averageScore.toStringAsFixed(1)}${_selectedMetric.suffix}',
+                          tint: _selectedMetric.tint,
                         ),
-                        const SizedBox(width: 12),
-                        Flexible(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text('Weekly Entries', textAlign: TextAlign.right, style: Theme.of(context).textTheme.bodyMedium),
-                              const SizedBox(height: 6),
-                              Text('${weeklySummary['total_sessions'] ?? 0}', style: Theme.of(context).textTheme.titleLarge?.copyWith(color: AppColors.terracotta, fontSize: 20)),
-                            ],
-                          ),
+                        _TrendValueCard(
+                          label: 'Best Point',
+                          value: highlight,
+                          tint: AppColors.sageGreen,
+                        ),
+                        _TrendValueCard(
+                          label: 'Data Points',
+                          value: '${chartPoints.length}',
+                          tint: AppColors.burntOrange,
                         ),
                       ],
                     ),
-                  ),
+                  ],
                 ],
               ),
             ),
             const SizedBox(height: 22),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(child: _SummaryPanel(title: 'Monthly Rehab Summary', summary: monthlySummary, emptyLabel: 'Monthly summary is not available yet.')),
-                const SizedBox(width: 14),
-                Expanded(child: _SummaryPanel(title: 'Total Progress Summary', summary: totalSummary, emptyLabel: 'Total recovery analytics will appear after more sessions.')),
-              ],
+            Text(
+              'Summary Panels',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontSize: 22,
+                    color: AppColors.white,
+                  ),
+            ),
+            const SizedBox(height: 14),
+            _SummaryPanel(
+              title: 'This Week',
+              summary: weeklySummary,
+              emptyLabel: 'Weekly summary is not available yet.',
+            ),
+            const SizedBox(height: 14),
+            _SummaryPanel(
+              title: 'This Month',
+              summary: monthlySummary,
+              emptyLabel: 'Monthly summary is not available yet.',
+            ),
+            const SizedBox(height: 14),
+            _SummaryPanel(
+              title: 'Overall Progress',
+              summary: totalSummary,
+              emptyLabel: 'Overall progress summary will appear after more sessions.',
             ),
             const SizedBox(height: 22),
             InkWell(
               borderRadius: BorderRadius.circular(26),
-              onTap: () async {
-                await _openLatestResult();
-              },
+              onTap: _openLatestResult,
               child: GlassCard(
                 radius: 26,
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
                 color: Colors.white.withValues(alpha: 0.08),
                 child: Row(
                   children: [
-                    Container(width: 56, height: 56, decoration: BoxDecoration(gradient: const LinearGradient(colors: [AppColors.dustyRose, AppColors.burntOrange]), borderRadius: BorderRadius.circular(18)), child: const Icon(Icons.analytics_rounded, color: AppColors.white)),
+                    Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(colors: [AppColors.dustyRose, AppColors.burntOrange]),
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      child: const Icon(Icons.analytics_rounded, color: AppColors.white),
+                    ),
                     const SizedBox(width: 16),
-                    Expanded(child: Text('Open Latest Analysis Details', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 18, color: AppColors.white, fontWeight: FontWeight.w700))),
+                    Expanded(
+                      child: Text(
+                        'Open Latest Analysis Details',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              fontSize: 18,
+                              color: AppColors.white,
+                              fontWeight: FontWeight.w700,
+                            ),
+                      ),
+                    ),
                     Icon(Icons.arrow_forward_ios_rounded, size: 20, color: AppColors.white.withValues(alpha: 0.45)),
                   ],
                 ),
               ),
             ),
             const SizedBox(height: 22),
-            Text('Recovery Actions', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 22, color: AppColors.white)),
+            Text(
+              'Recovery Actions',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontSize: 22,
+                    color: AppColors.white,
+                  ),
+            ),
             const SizedBox(height: 16),
-            Row(
+            Wrap(
+              spacing: 14,
+              runSpacing: 14,
               children: [
-                Expanded(
+                SizedBox(
+                  width: 172,
                   child: _ActionCard(
                     title: 'New Analysis',
                     subtitle: 'Upload or record again',
@@ -260,8 +367,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
                     onTap: () => Navigator.pushNamed(context, AppRoutes.upload),
                   ),
                 ),
-                const SizedBox(width: 14),
-                Expanded(
+                SizedBox(
+                  width: 172,
                   child: _ActionCard(
                     title: 'Skeleton View',
                     subtitle: 'Check live tracking',
@@ -278,72 +385,224 @@ class _ProgressScreenState extends State<ProgressScreen> {
     );
   }
 
-  BarChartData _weeklyBarData(BuildContext context, List<double> values) {
-    const labels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-    return BarChartData(
-      maxY: 100,
-      gridData: FlGridData(show: false),
+  LineChartData _buildLineChartData(BuildContext context, List<_MetricPoint> points, Color tint) {
+    return LineChartData(
+      minY: 0,
+      maxY: _selectedMetric.maxY,
+      gridData: FlGridData(
+        show: true,
+        drawVerticalLine: false,
+        horizontalInterval: _selectedMetric.gridStep,
+        getDrawingHorizontalLine: (_) => FlLine(
+          color: AppColors.softCharcoal.withValues(alpha: 0.08),
+          strokeWidth: 1,
+        ),
+      ),
       borderData: FlBorderData(show: false),
-      alignment: BarChartAlignment.spaceAround,
+      lineTouchData: LineTouchData(
+        handleBuiltInTouches: true,
+        touchTooltipData: LineTouchTooltipData(
+          tooltipRoundedRadius: 14,
+          tooltipPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          getTooltipColor: (_) => const Color(0xFF121821),
+          getTooltipItems: (spots) {
+            return spots.map((spot) {
+              final index = spot.x.toInt();
+              final label = index >= 0 && index < points.length ? points[index].label : 'Point';
+              return LineTooltipItem(
+                '$label\n${spot.y.toStringAsFixed(1)}${_selectedMetric.suffix}',
+                const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, height: 1.35),
+              );
+            }).toList();
+          },
+        ),
+      ),
       titlesData: FlTitlesData(
-        leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-        rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
         topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        leftTitles: AxisTitles(
+          sideTitles: SideTitles(
+            showTitles: true,
+            reservedSize: 42,
+            interval: _selectedMetric.gridStep,
+            getTitlesWidget: (value, _) {
+              return Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: Text(
+                  value.toInt().toString(),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.softCharcoal.withValues(alpha: 0.56),
+                      ),
+                ),
+              );
+            },
+          ),
+        ),
         bottomTitles: AxisTitles(
           sideTitles: SideTitles(
             showTitles: true,
-            getTitlesWidget: (value, meta) {
+            reservedSize: 32,
+            getTitlesWidget: (value, _) {
               final index = value.toInt();
-              if (index < 0 || index >= labels.length) {
-                return const SizedBox.shrink();
-              }
+              if (index < 0 || index >= points.length) return const SizedBox.shrink();
               return Padding(
                 padding: const EdgeInsets.only(top: 8),
-                child: Text(labels[index], style: Theme.of(context).textTheme.bodyMedium),
+                child: Text(
+                  points[index].label,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.softCharcoal.withValues(alpha: 0.72),
+                      ),
+                ),
               );
             },
           ),
         ),
       ),
-      barGroups: List.generate(values.length, (index) {
-        return BarChartGroupData(
-          x: index,
-          barRods: [
-            BarChartRodData(
-              toY: values[index],
-              width: 18,
-              borderRadius: BorderRadius.circular(12),
-              gradient: const LinearGradient(begin: Alignment.bottomCenter, end: Alignment.topCenter, colors: [AppColors.burntOrange, AppColors.terracotta]),
+      lineBarsData: [
+        LineChartBarData(
+          isCurved: true,
+          color: tint,
+          barWidth: 4,
+          dotData: FlDotData(
+            show: true,
+            getDotPainter: (_, __, ___, ____) => FlDotCirclePainter(
+              radius: 4.5,
+              color: tint,
+              strokeColor: Colors.white,
+              strokeWidth: 2,
             ),
-          ],
-        );
-      }),
+          ),
+          belowBarData: BarAreaData(
+            show: true,
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                tint.withValues(alpha: 0.24),
+                tint.withValues(alpha: 0.03),
+              ],
+            ),
+          ),
+          spots: List.generate(
+            points.length,
+            (index) => FlSpot(index.toDouble(), points[index].value),
+          ),
+        ),
+      ],
     );
   }
+}
 
-  List<double> _buildWeeklySeries(Map<String, dynamic> summary) {
-    const orderedKeys = [
-      'safe_session_rate',
-      'avg_stability',
-      'avg_symmetry',
-    ];
-    final numericValues = <double>[];
-    for (final key in orderedKeys) {
-      final value = _toDouble(summary[key]);
-      if (value != null) {
-        numericValues.add(value);
-      }
-    }
-    final totalSessions = _toDouble(summary['total_sessions']) ?? 0;
-    if (totalSessions <= 1) {
-      return const <double>[];
-    }
-    return numericValues;
+enum _MetricType {
+  safety('Safety', AppColors.sageGreen, '%', 100, 25),
+  stability('Stability', AppColors.terracotta, '%', 100, 25),
+  symmetry('Symmetry', AppColors.burntOrange, '%', 100, 25),
+  kneeAngle('Knee Angle', AppColors.gold, 'deg', 180, 45);
+
+  const _MetricType(this.label, this.tint, this.suffix, this.maxY, this.gridStep);
+
+  final String label;
+  final Color tint;
+  final String suffix;
+  final double maxY;
+  final double gridStep;
+}
+
+class _MetricPoint {
+  const _MetricPoint({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final double value;
+}
+
+class _MetricChip extends StatelessWidget {
+  const _MetricChip({
+    required this.label,
+    required this.tint,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final Color tint;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(999),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: selected ? tint : Colors.white.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: selected ? tint : Colors.white.withValues(alpha: 0.12)),
+        ),
+        child: Text(
+          label,
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                color: selected ? AppColors.white : Colors.white.withValues(alpha: 0.84),
+              ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TrendValueCard extends StatelessWidget {
+  const _TrendValueCard({
+    required this.label,
+    required this.value,
+    required this.tint,
+  });
+
+  final String label;
+  final String value;
+  final Color tint;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 104,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      decoration: BoxDecoration(
+        color: tint.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.softCharcoal.withValues(alpha: 0.68),
+                ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: AppColors.softCharcoal,
+                  fontWeight: FontWeight.w800,
+                ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
 class _SummaryPanel extends StatelessWidget {
-  const _SummaryPanel({required this.title, required this.summary, required this.emptyLabel});
+  const _SummaryPanel({
+    required this.title,
+    required this.summary,
+    required this.emptyLabel,
+  });
 
   final String title;
   final Map<String, dynamic> summary;
@@ -353,26 +612,25 @@ class _SummaryPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return GlassCard(
       radius: 24,
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(20),
       color: AppColors.white.withValues(alpha: 0.9),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 17)),
-          const SizedBox(height: 12),
+          Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 18)),
+          const SizedBox(height: 14),
           if (summary.isEmpty)
             Text(emptyLabel, style: Theme.of(context).textTheme.bodyMedium)
           else
-            ...summary.entries.take(5).map(
+            ...summary.entries
+                .where((entry) => entry.value != null && entry.key != 'message')
+                .take(5)
+                .map(
                   (entry) => Padding(
                     padding: const EdgeInsets.only(bottom: 10),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(child: Text(_pretty(entry.key), style: Theme.of(context).textTheme.bodyMedium)),
-                        const SizedBox(width: 10),
-                        Flexible(child: Text(_formatValue(entry.value), textAlign: TextAlign.right, style: Theme.of(context).textTheme.titleSmall)),
-                      ],
+                    child: _SummaryValueRow(
+                      label: _pretty(entry.key),
+                      value: _formatValue(entry.value),
                     ),
                   ),
                 ),
@@ -382,8 +640,56 @@ class _SummaryPanel extends StatelessWidget {
   }
 }
 
+class _SummaryValueRow extends StatelessWidget {
+  const _SummaryValueRow({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F5FB),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppColors.softCharcoal.withValues(alpha: 0.68),
+                  height: 1.25,
+                ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  color: AppColors.softCharcoal,
+                  fontWeight: FontWeight.w700,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _ActionCard extends StatelessWidget {
-  const _ActionCard({required this.title, required this.subtitle, required this.icon, required this.tint, required this.onTap});
+  const _ActionCard({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.tint,
+    required this.onTap,
+  });
 
   final String title;
   final String subtitle;
@@ -403,11 +709,25 @@ class _ActionCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(width: 46, height: 46, decoration: BoxDecoration(color: tint.withValues(alpha: 0.18), borderRadius: BorderRadius.circular(16)), child: Icon(icon, color: tint)),
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                color: tint.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(icon, color: tint),
+            ),
             const SizedBox(height: 14),
-            Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(color: AppColors.white)),
+            Text(
+              title,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(color: AppColors.white),
+            ),
             const SizedBox(height: 4),
-            Text(subtitle, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.white.withValues(alpha: 0.68))),
+            Text(
+              subtitle,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.white.withValues(alpha: 0.68)),
+            ),
           ],
         ),
       ),
@@ -429,6 +749,53 @@ class _InfoCard extends StatelessWidget {
       child: Text(message, style: Theme.of(context).textTheme.bodyLarge),
     );
   }
+}
+
+List<_MetricPoint> _buildMetricPoints({
+  required _MetricType metric,
+  required Map<String, dynamic> weekly,
+  required Map<String, dynamic> monthly,
+  required Map<String, dynamic> total,
+}) {
+  double? weeklyValue;
+  double? monthlyValue;
+  double? totalValue;
+
+  switch (metric) {
+    case _MetricType.safety:
+      weeklyValue = _percentish(weekly['safe_session_rate']);
+      monthlyValue = _percentish(monthly['safe_session_rate']);
+      totalValue = _percentish(total['safe_session_rate']);
+      break;
+    case _MetricType.stability:
+      weeklyValue = _percentish(weekly['avg_stability']);
+      monthlyValue = _percentish(monthly['avg_stability']);
+      totalValue = _percentish(total['stability_trend'] ?? weekly['avg_stability'] ?? monthly['avg_stability']);
+      break;
+    case _MetricType.symmetry:
+      weeklyValue = _percentish(weekly['avg_symmetry']);
+      monthlyValue = _percentish(monthly['avg_symmetry']);
+      totalValue = _percentish(total['symmetry_trend'] ?? weekly['avg_symmetry'] ?? monthly['avg_symmetry']);
+      break;
+    case _MetricType.kneeAngle:
+      weeklyValue = _toDouble(weekly['avg_knee_angle']);
+      monthlyValue = _toDouble(monthly['avg_knee_angle']);
+      totalValue = _toDouble(total['avg_knee_angle'] ?? total['best_knee_angle'] ?? monthly['avg_knee_angle']);
+      break;
+  }
+
+  final points = <_MetricPoint>[
+    if (weeklyValue != null) _MetricPoint(label: 'Week', value: weeklyValue),
+    if (monthlyValue != null) _MetricPoint(label: 'Month', value: monthlyValue),
+    if (totalValue != null) _MetricPoint(label: 'Overall', value: totalValue),
+  ];
+  return points;
+}
+
+String _metricHighlight(_MetricType metric, List<_MetricPoint> points) {
+  if (points.isEmpty) return 'N/A';
+  final best = points.reduce((a, b) => a.value >= b.value ? a : b);
+  return '${best.label} ${best.value.toStringAsFixed(1)}${metric.suffix}';
 }
 
 Map<String, dynamic> _extractMap(Object? value) {
@@ -464,9 +831,10 @@ double? _toDouble(Object? value) {
   return null;
 }
 
-double _average(List<double> values) {
-  if (values.isEmpty) return 0;
-  return values.reduce((a, b) => a + b) / values.length;
+double? _percentish(Object? value) {
+  final numeric = _toDouble(value);
+  if (numeric == null) return null;
+  return numeric <= 1 ? numeric * 100 : numeric;
 }
 
 String _pretty(String key) {

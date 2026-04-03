@@ -14,6 +14,7 @@ class RehabRequest(BaseModel):
 
 class RehabResponse(BaseModel):
     status: str
+    score: int | float | None = None
     is_safe: bool | None = None
     warnings: list[str] = Field(default_factory=list)
     feedback: str | None = None
@@ -27,3 +28,4 @@ class RehabResponse(BaseModel):
     form_status: str | None = None
     error_categories: list[str] = Field(default_factory=list)
     model_agreement: str | None = None
+    stage_focus: str | None = None

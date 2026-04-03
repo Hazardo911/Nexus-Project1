@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 
 import '../../../core/route_names.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../shared/widgets/animated_cta_button.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -94,11 +93,32 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                     const SizedBox(height: 36),
                     const _PagerDots(),
                     const Spacer(),
-                    AnimatedCtaButton(
-                      label: 'Get Started',
-                      icon: Icons.arrow_forward_rounded,
-                      onPressed: _openGetStarted,
+                    SizedBox(
+                      width: double.infinity,
                       height: 68,
+                      child: FilledButton(
+                        onPressed: _openGetStarted,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.terracotta,
+                          foregroundColor: AppColors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.arrow_forward_rounded, color: AppColors.white.withValues(alpha: 0.95)),
+                            const SizedBox(width: 10),
+                            Text(
+                              'Get Started',
+                              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                                    fontSize: 17,
+                                    color: AppColors.white,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 14),
                     SizedBox(

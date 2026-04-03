@@ -11,4 +11,5 @@
   static const heatMap = '/heatmap';
   static const compare = '/compare';
   static const gamification = '/gamification';
+  static const history = '/history';
 }

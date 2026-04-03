@@ -2,6 +2,8 @@ import logging
 import os
 from datetime import datetime
 from contextlib import asynccontextmanager
+import json
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi import Query
@@ -73,3 +75,26 @@ def start_session(user_id: str = Query("anonymous"), mode: str = Query("training
 
     session_id = create_db_session(user_id, mode)
     return {"status": "success", "session_id": session_id}
+
+
+@app.get("/sessions")
+def get_sessions(user_id: str = Query("anonymous"), limit: int = Query(20, ge=1, le=100)):
+    file_path = Path("sessions") / f"{user_id}.json"
+    if not file_path.exists():
+        return {"user_id": user_id, "sessions": [], "total": 0}
+
+    try:
+        with file_path.open("r", encoding="utf-8") as f:
+            records = json.load(f)
+    except Exception:
+        records = []
+
+    if not isinstance(records, list):
+        records = []
+
+    trimmed = list(reversed(records))[:limit]
+    return {
+        "user_id": user_id,
+        "sessions": trimmed,
+        "total": len(records),
+    }

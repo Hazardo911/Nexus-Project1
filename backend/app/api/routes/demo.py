@@ -17,6 +17,31 @@ from app.utils.temporal_buffer import TemporalBuffer
 router = APIRouter()
 
 
+def _fallback_rehab_score(decision: dict) -> int:
+    existing = decision.get("score")
+    if isinstance(existing, (int, float)) and existing > 0:
+        return int(existing)
+
+    score = 100
+    if decision.get("is_safe") is False:
+        score -= 30
+
+    warnings = decision.get("warnings") or []
+    error_categories = decision.get("error_categories") or []
+    score -= min(len(warnings) * 8, 24)
+    score -= min(len(error_categories) * 10, 30)
+
+    features = decision.get("features") or {}
+    stability = features.get("stability")
+    symmetry = features.get("symmetry_score")
+    if isinstance(stability, (int, float)) and stability < 0.6:
+        score -= 12
+    if isinstance(symmetry, (int, float)) and symmetry < 0.65:
+        score -= 10
+
+    return max(0, min(100, int(score)))
+
+
 def _persist_upload_result(
     *,
     user_id: str,
@@ -155,6 +180,7 @@ async def analyze_uploaded_video(
                         stage,
                         result.get("validation"),
                     )
+                    decision["score"] = _fallback_rehab_score(decision)
                 else:
                     decision = fitness_decision(
                         result["features"],

@@ -1,15 +1,15 @@
 ﻿import 'package:flutter/material.dart';
 
 class AppColors {
-  static const terracotta = Color(0xFF4DA8FF);
-  static const burntOrange = Color(0xFF7C5CFF);
-  static const ember = Color(0xFF22C7F2);
-  static const gold = Color(0xFF8AD7FF);
-  static const peachSand = Color(0xFFDCEBFF);
+  static const terracotta = Color(0xFF1E78D7);
+  static const burntOrange = Color(0xFFC65A33);
+  static const ember = Color(0xFF0F88B8);
+  static const gold = Color(0xFFB8860B);
+  static const peachSand = Color(0xFFE8EEF8);
   static const warmCream = Color(0xFFF3F8FC);
-  static const sageGreen = Color(0xFF67E8C8);
-  static const oliveMist = Color(0xFF9DDCFF);
-  static const dustyRose = Color(0xFFA78BFA);
+  static const sageGreen = Color(0xFF148A68);
+  static const oliveMist = Color(0xFF4B7DA8);
+  static const dustyRose = Color(0xFF7455D8);
   static const softCharcoal = Color(0xFF14181C);
   static const mist = Color(0xFFF6FAFF);
   static const white = Colors.white;

@@ -90,6 +90,8 @@ def log_session(user_id: str, record: dict) -> None:
             "allowed_exercises": record.get("allowed_exercises"),
             "model": record.get("model"),
             "features": record.get("features"),
+            "landmarks": record.get("landmarks"),
+            "connections": record.get("connections"),
             "user_id": user_id,
         }
         existing.append(entry)
