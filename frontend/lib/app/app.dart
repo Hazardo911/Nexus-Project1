@@ -12,7 +12,7 @@ import '../features/heatmap/presentation/heatmap_screen.dart';
 import '../features/home/presentation/home_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
 import '../features/progress/presentation/progress_screen.dart';
-import '../features/results/presentation/results_screen.dart';
+import '../features/results/presentation/result_screen.dart';
 import '../features/splash/presentation/splash_screen.dart';
 
 class ExerciseFormApp extends StatelessWidget {
