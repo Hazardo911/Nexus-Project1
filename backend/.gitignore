@@ -10,7 +10,5 @@ test_video.mp4
 *.mkv
 *.webm
 
-*.pth
-
 .DS_Store
 Thumbs.db
