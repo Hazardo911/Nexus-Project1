@@ -6,6 +6,7 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from app.utils.temporal_buffer import TemporalBuffer
 from app.services.analysis_service import analysis_service
 from app.services.rehab_service import rehab_service
+from app.services.session_service import create_db_session
 
 router = APIRouter()
 
@@ -13,12 +14,15 @@ router = APIRouter()
 async def stream(websocket: WebSocket):
     await websocket.accept()
     buffer = None
+    session_id = None
 
     try:
         config = json.loads(await websocket.receive_text())
         mode = config.get("mode")
         user_id = config.get("user_id", "anonymous")
         selected_exercise = config.get("selected_exercise")
+        session_id = create_db_session(user_id, mode)
+        logging.info(f"Created DB session: {session_id} for user: {user_id}")
         if mode not in {"fitness", "rehab"}:
             await websocket.send_json({"status": "error", "message": "mode must be 'fitness' or 'rehab'"})
             return
@@ -37,11 +41,11 @@ async def stream(websocket: WebSocket):
                     continue
 
                 if mode == "fitness":
-                    result = analysis_service(frame, buffer, user_id, selected_exercise)
+                    result = analysis_service(frame, buffer, user_id, selected_exercise, session_id=session_id)
                 else:
                     injury = config.get("injury", "ACL")
                     stage = config.get("stage", "early")
-                    result = rehab_service(frame, buffer, user_id, injury, stage, selected_exercise)
+                    result = rehab_service(frame, buffer, user_id, injury, stage, selected_exercise, session_id=session_id)
 
                 await websocket.send_json(result)
             except Exception as exc:

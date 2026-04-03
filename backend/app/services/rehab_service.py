@@ -1,10 +1,15 @@
-from app.core.pipeline.orchestrator import run_pipeline
-from app.core.decision.rehab import rehab_decision
-from app.services.session_service import log_session
+import logging
+
 from datetime import datetime
 
+from app.core.pipeline.orchestrator import run_pipeline
+from app.core.decision.rehab import rehab_decision
+from app.db.crud import insert_movement_metric, insert_rehab_session
+from app.db.database import SessionLocal
+from app.services.session_service import log_session
 
-def rehab_service(frame_bgr, buffer, user_id: str, injury: str, stage: str, selected_exercise: str | None = None) -> dict:
+
+def rehab_service(frame_bgr, buffer, user_id: str, injury: str, stage: str, selected_exercise: str | None = None, session_id: str | None = None) -> dict:
     result = run_pipeline(frame_bgr, buffer, selected_exercise=selected_exercise)
     if result.get("status") != "ok":
         return result
@@ -23,5 +28,34 @@ def rehab_service(frame_bgr, buffer, user_id: str, injury: str, stage: str, sele
         "injury": injury,
         "stage": stage
     })
+
+    if session_id:
+        db = SessionLocal()
+        try:
+            safety_val = 1.0 if decision.get("status") == "safe" else 0.0
+            insert_rehab_session(
+                db,
+                session_id,
+                injury_type=injury,
+                stage=stage,
+                score=float(decision.get("score", 0) or 0),
+                safety=safety_val,
+                rom=float(result["features"].get("avg_knee_angle", 0) or 0),
+                stability=float(result["features"].get("stability", 0) or 0),
+                decision=str(decision.get("feedback", "No feedback")),
+                feedback=str(decision.get("feedback", "")),
+            )
+            insert_movement_metric(
+                db,
+                session_id,
+                joint_name="knee",
+                angle=float(result["features"].get("avg_knee_angle", 0) or 0),
+                velocity=0.0,
+                acceleration=0.0,
+            )
+        except Exception as e:
+            logging.warning(f"Failed to insert rehab data for session {session_id}: {e}")
+        finally:
+            db.close()
 
     return decision

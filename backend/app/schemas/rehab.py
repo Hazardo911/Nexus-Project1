@@ -9,6 +9,7 @@ class RehabRequest(BaseModel):
     frame_jpeg: bytes
     fps: int = Field(default=30, gt=0)
     window_seconds: float = Field(default=3.33, gt=0.0)
+    session_id: str | None = None
 
 
 class RehabResponse(BaseModel):

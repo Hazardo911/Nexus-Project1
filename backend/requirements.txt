@@ -8,3 +8,6 @@ opencv-python==4.8.0.74
 torch>=2.1.0
 torchvision>=0.16.0
 python-multipart==0.0.9
+python-dotenv==1.0.1
+SQLAlchemy==2.0.48
+psycopg2==2.9.11
