@@ -2,7 +2,7 @@
 __pycache__/
 *.pyc
 
-sessions/
+
 
 test_video.mp4
 *.avi
