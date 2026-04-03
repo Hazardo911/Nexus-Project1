@@ -60,6 +60,31 @@ class _ProgressScreenState extends State<ProgressScreen> {
     }
   }
 
+  Future<void> _openLatestResult() async {
+    await AppHaptics.mediumImpact();
+    final localLatest = LatestAnalysisStore.latestResult;
+    if (localLatest != null && localLatest.isNotEmpty && mounted) {
+      Navigator.pushNamed(context, AppRoutes.results, arguments: localLatest);
+      return;
+    }
+
+    try {
+      final latest = await NexusApiService.getLatestResult(userId: _userId);
+      if (!mounted) return;
+      if ((latest['message']?.toString().contains('No analysis') ?? false) || latest.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No latest analysis found yet. Upload a session first.')),
+        );
+        return;
+      }
+      LatestAnalysisStore.save(latest);
+      Navigator.pushNamed(context, AppRoutes.results, arguments: latest);
+    } on NexusApiException catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final weeklySummary = _extractMap(_summary['weekly_summary']);
@@ -70,7 +95,6 @@ class _ProgressScreenState extends State<ProgressScreen> {
     final formStatus = _summary['message']?.toString() ?? 'No session yet';
     final weeklyValues = _buildWeeklySeries(weeklySummary);
     final hasWeeklyChartData = weeklyValues.isNotEmpty;
-    final hasLatestAnalysis = LatestAnalysisStore.hasResult;
 
     return AppShell(
       title: 'Progress',
@@ -206,18 +230,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
             InkWell(
               borderRadius: BorderRadius.circular(26),
               onTap: () async {
-                await AppHaptics.mediumImpact();
-                if (!hasLatestAnalysis) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Latest analysis details are not available in the summary yet. Start a new upload to view full results.')),
-                    );
-                  }
-                  return;
-                }
-                if (context.mounted) {
-                  Navigator.pushNamed(context, AppRoutes.results, arguments: LatestAnalysisStore.latestResult);
-                }
+                await _openLatestResult();
               },
               child: GlassCard(
                 radius: 26,

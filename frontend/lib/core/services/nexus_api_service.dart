@@ -79,6 +79,11 @@ class NexusApiService {
     return _request('GET', '/summary/?user_id=$encodedUserId');
   }
 
+  static Future<Map<String, dynamic>> getLatestResult({String userId = defaultUserId}) async {
+    final encodedUserId = Uri.encodeQueryComponent(userId);
+    return _request('GET', '/latest-result/?user_id=$encodedUserId');
+  }
+
   static String? _mapExercise(String? exercise) {
     if (exercise == null || exercise.isEmpty) return null;
     switch (exercise.toLowerCase()) {

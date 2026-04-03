@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/app_preferences.dart';
+import '../../../core/latest_analysis_store.dart';
 import '../../../core/route_names.dart';
+import '../../../core/services/nexus_api_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/glass_card.dart';
 import '../../../shared/widgets/widgets.dart';
@@ -25,6 +27,31 @@ class HomeScreen extends StatelessWidget {
 
   Future<void> _openExerciseUpload(BuildContext context, _ExerciseData exercise) async {
     await _openRoute(context, AppRoutes.upload, arguments: {'exercise': exercise.title});
+  }
+
+  Future<void> _openLatestResults(BuildContext context) async {
+    await AppHaptics.lightImpact();
+    final localLatest = LatestAnalysisStore.latestResult;
+    if (localLatest != null && localLatest.isNotEmpty && context.mounted) {
+      Navigator.pushNamed(context, AppRoutes.results, arguments: localLatest);
+      return;
+    }
+
+    try {
+      final latest = await NexusApiService.getLatestResult();
+      if (!context.mounted) return;
+      if ((latest['message']?.toString().contains('No analysis') ?? false) || latest.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No latest analysis found yet. Upload a session first.')),
+        );
+        return;
+      }
+      LatestAnalysisStore.save(latest);
+      Navigator.pushNamed(context, AppRoutes.results, arguments: latest);
+    } on NexusApiException catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+    }
   }
 
   @override
@@ -113,7 +140,7 @@ class HomeScreen extends StatelessWidget {
             subtitle: 'Form status, errors, confidence, suggestions',
             icon: Icons.insights_rounded,
             tint: AppColors.gold,
-            onTap: () => _openRoute(context, AppRoutes.results),
+            onTap: () => _openLatestResults(context),
           ),
           const SizedBox(height: 28),
           _SectionHeader(

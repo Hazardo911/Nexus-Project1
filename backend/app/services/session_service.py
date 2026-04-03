@@ -65,6 +65,7 @@ def log_session(user_id: str, record: dict) -> None:
         entry = {
             "timestamp": record.get("timestamp") or datetime.utcnow().isoformat(),
             "exercise": record.get("exercise"),
+            "selected_exercise": record.get("selected_exercise"),
             "avg_knee_angle": record.get("avg_knee_angle"),
             "min_knee_angle": record.get("min_knee_angle"),
             "max_knee_angle": record.get("max_knee_angle"),
@@ -78,7 +79,18 @@ def log_session(user_id: str, record: dict) -> None:
             "is_safe": record.get("is_safe"),
             "score": record.get("score"),
             "injury": record.get("injury"),
-            "stage": record.get("stage")
+            "stage": record.get("stage"),
+            "status": record.get("status"),
+            "form_status": record.get("form_status"),
+            "error_categories": record.get("error_categories"),
+            "model_agreement": record.get("model_agreement"),
+            "risk_flags": record.get("risk_flags"),
+            "warnings": record.get("warnings"),
+            "feedback": record.get("feedback"),
+            "allowed_exercises": record.get("allowed_exercises"),
+            "model": record.get("model"),
+            "features": record.get("features"),
+            "user_id": user_id,
         }
         existing.append(entry)
 

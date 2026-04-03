@@ -8,7 +8,7 @@ from fastapi import Query
 
 from app.core.ai.inference import get_model
 from app.core.ai.model import CLASS_NAMES
-from app.api.routes import analyze, demo, rehab, summary, stream
+from app.api.routes import analyze, demo, latest, rehab, summary, stream
 from app.services.session_service import get_active_session, stop_session
 
 
@@ -26,6 +26,7 @@ app = FastAPI(title="Nexus AI Backend", version="2.0.0", lifespan=lifespan)
 app.include_router(analyze.router, prefix="/analyze")
 app.include_router(rehab.router, prefix="/rehab")
 app.include_router(summary.router, prefix="/summary")
+app.include_router(latest.router, prefix="/latest-result")
 app.include_router(stream.router)
 app.include_router(demo.router)
 
