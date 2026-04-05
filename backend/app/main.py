@@ -1,17 +1,21 @@
 import logging
 import os
-from datetime import datetime, timedelta
-from fastapi import FastAPI, Query, Depends, HTTPException, status
+import json
+from datetime import datetime
+from pathlib import Path
 from contextlib import asynccontextmanager
+
+from fastapi import FastAPI, Query, Depends, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from sqlalchemy.orm import Session
+
 from app.core.ai.inference import get_model
 from app.core.ai.model import CLASS_NAMES
-from app.api.routes import analyze, demo, rehab, summary, stream
+from app.api.routes import analyze, demo, latest, rehab, summary, stream
 from app.services.session_service import get_active_session, stop_session
 from app.core.auth import get_password_hash, verify_password, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
 from app.db import crud, dependencies
-from pydantic import BaseModel
-from sqlalchemy.orm import Session
-from fastapi.middleware.cors import CORSMiddleware
 
 class UserCreate(BaseModel):
     email: str
@@ -47,6 +51,7 @@ app.add_middleware(
 app.include_router(analyze.router, prefix="/analyze")
 app.include_router(rehab.router, prefix="/rehab")
 app.include_router(summary.router, prefix="/summary")
+app.include_router(latest.router, prefix="/latest-result")
 app.include_router(stream.router)
 app.include_router(demo.router)
 
@@ -89,10 +94,31 @@ def stop_user_session(user_id: str = Query("anonymous")):
 
 @app.post("/start")
 def start_session(user_id: str = Query("anonymous"), mode: str = Query("training")):
-    # This might be redundant if /stream creates it, but good for REST flow
     from app.services.session_service import create_db_session
     session_id = create_db_session(user_id, mode)
     return {"status": "success", "session_id": session_id}
+
+@app.get("/sessions")
+def get_sessions(user_id: str = Query("anonymous"), limit: int = Query(20, ge=1, le=100)):
+    file_path = Path("sessions") / f"{user_id}.json"
+    if not file_path.exists():
+        return {"user_id": user_id, "sessions": [], "total": 0}
+
+    try:
+        with file_path.open("r", encoding="utf-8") as f:
+            records = json.load(f)
+    except Exception:
+        records = []
+
+    if not isinstance(records, list):
+        records = []
+
+    trimmed = list(reversed(records))[:limit]
+    return {
+        "user_id": user_id,
+        "sessions": trimmed,
+        "total": len(records),
+    }
 
 @app.post("/register")
 def register_user(user_in: UserCreate, db: Session = Depends(dependencies.get_db)):

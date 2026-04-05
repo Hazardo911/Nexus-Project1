@@ -1,10 +1,17 @@
-﻿import 'package:flutter/services.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AppPreferences {
+  static late SharedPreferences prefs;
+
   static final notifications = ValueNotifier<bool>(true);
   static final hapticFeedback = ValueNotifier<bool>(true);
   static final darkCameraPreview = ValueNotifier<bool>(false);
+
+  static Future<void> init() async {
+    prefs = await SharedPreferences.getInstance();
+  }
 
   static void setNotifications(bool value) => notifications.value = value;
 

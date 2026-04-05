@@ -1,4 +1,4 @@
-﻿class AppRoutes {
+class AppRoutes {
   static const splash = '/';
   static const home = '/home';
   static const auth = '/auth';
@@ -11,4 +11,5 @@
   static const heatMap = '/heatmap';
   static const compare = '/compare';
   static const gamification = '/gamification';
+  static const history = '/history';
 }

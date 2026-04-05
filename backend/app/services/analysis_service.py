@@ -1,14 +1,16 @@
+import logging
+from datetime import datetime
+
 from app.core.pipeline.orchestrator import run_pipeline
 from app.core.decision.fitness import fitness_decision
-from app.services.session_service import log_session
-from datetime import datetime
+from app.db.crud import insert_movement_metric, insert_training_session
 from app.db.database import SessionLocal
-from app.db.crud import insert_training_session, insert_movement_metric
+from app.services.session_service import log_session
 
 
 def analysis_service(frame_bgr, buffer, user_id: str, selected_exercise: str | None = None, session_id: str | None = None) -> dict:
     result = run_pipeline(frame_bgr, buffer, selected_exercise=selected_exercise)
-    if result.get("status") != "ok" and result.get("status") != "success":
+    if result.get("status") != "ok":
         return result
 
     decision = fitness_decision(
@@ -33,22 +35,20 @@ def analysis_service(frame_bgr, buffer, user_id: str, selected_exercise: str | N
                 db,
                 session_id,
                 score=float(decision.get("score", 0)),
-                symmetry=float(decision.get("symmetry_score", 0)),
-                stability=float(decision.get("stability", 0)),
-                speed=float(decision.get("speed", 0)),
-                feedback=", ".join(decision.get("feedback", []))
+                symmetry=float(decision.get("symmetry_score", 0) or 0),
+                stability=float(decision.get("stability", 0) or 0),
+                speed=float(decision.get("speed", 0) or 0),
+                feedback=", ".join(decision.get("feedback", [])),
             )
-            # Optional: insert knee metric
             insert_movement_metric(
                 db,
                 session_id,
                 joint_name="knee",
-                angle=float(result["features"].get("knee_angle", 0)),
+                angle=float(result["features"].get("avg_knee_angle", 0) or 0),
                 velocity=0.0,
-                acceleration=0.0
+                acceleration=0.0,
             )
         except Exception as e:
-            import logging
             logging.warning(f"Failed to insert training data for session {session_id}: {e}")
         finally:
             db.close()
